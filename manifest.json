@@ -1,0 +1,13 @@
+{
+  "name": "Free Draw Board — Real-Time Whiteboard",
+  "short_name": "Freedrawboard",
+  "description": "Free real-time collaborative whiteboard. No signup, password-protected, ephemeral.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf9f6",
+  "theme_color": "#faf9f6",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
