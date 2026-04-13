@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>Free Online Whiteboard — Real-Time Collaborative Drawing | freedrawboard.app</title>
-    <meta name="description" content="Free collaborative whiteboard in your browser. Draw, sketch, brainstorm with others in real time. No signup, password-protected rooms, ephemeral.">
+    <meta name="description" content="Free collaborative whiteboard in your browser. Draw, sketch, brainstorm with others in real time. Password-protected rooms, no signup, no download.">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://freedrawboard.app/">
     <meta name="theme-color" content="#faf9f6">
@@ -13,7 +13,7 @@
     <link rel="manifest" href="/manifest.json">
 
     <meta property="og:title" content="Free Online Whiteboard — freedrawboard.app">
-    <meta property="og:description" content="Free real-time collaborative whiteboard. No signup, password-protected, ephemeral.">
+    <meta property="og:description" content="Free real-time collaborative whiteboard. No signup, password-protected.">
     <meta property="og:image" content="https://freedrawboard.app/og-image.svg">
     <meta property="og:url" content="https://freedrawboard.app/">
     <meta property="og:type" content="website">
@@ -45,7 +45,6 @@
             "Pen, shapes, text, sticky notes, images",
             "Multi-cursor with names",
             "Password-protected rooms",
-            "Self-destruct timer (1h or 24h)",
             "PNG export",
             "No signup required"
         ]
@@ -58,9 +57,8 @@
         "mainEntity": [
             { "@type": "Question", "name": "Is freedrawboard.app really free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. 100% free with no signup, no ads, and no usage limits. Create as many boards as you want." } },
             { "@type": "Question", "name": "How does collaboration work?", "acceptedAnswer": { "@type": "Answer", "text": "Create a board to get a strong auto-generated password (e.g., 'blue-otter-42-moon'). Anyone with that password can join the same board from any device. Drawings sync in real-time. You can see other participants' cursors with their names." } },
-            { "@type": "Question", "name": "Are my drawings stored on a server?", "acceptedAnswer": { "@type": "Answer", "text": "No. Drawings are relayed through Supabase Realtime but never written to any database. Your local copy lives in your browser's localStorage and is wiped if you choose a self-destruct mode." } },
-            { "@type": "Question", "name": "What is the self-destruct timer?", "acceptedAnswer": { "@type": "Answer", "text": "When creating a board, you can choose 1-hour or 24-hour mode. After that duration, all drawings are wiped from every participant's device simultaneously. The timer is baked into the board URL so it cannot be tampered with." } },
-            { "@type": "Question", "name": "How is freedrawboard.app different from Miro or Excalidraw?", "acceptedAnswer": { "@type": "Answer", "text": "Miro requires accounts and is heavyweight for quick use. Excalidraw is excellent for solo drawing but its collaboration features require account or paid sharing. Freedrawboard is instant — no account, password-protected rooms, ephemeral by default. For deep team workspaces use Miro; for quick collaborative sketches use freedrawboard." } },
+            { "@type": "Question", "name": "Are my drawings stored on a server?", "acceptedAnswer": { "@type": "Answer", "text": "No. Drawings are relayed through Supabase Realtime but never written to any database. Your local copy lives in your browser's localStorage. Export to PNG if you want a permanent copy." } },
+            { "@type": "Question", "name": "How is freedrawboard.app different from Miro or Excalidraw?", "acceptedAnswer": { "@type": "Answer", "text": "Miro requires accounts and is heavyweight for quick use. Excalidraw is excellent for solo drawing but its collaboration features require account or paid sharing. Freedrawboard is instant — no account, password-protected rooms. For deep team workspaces use Miro; for quick collaborative sketches use freedrawboard." } },
             { "@type": "Question", "name": "Can I export my whiteboard?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Click Export to download the current canvas as a PNG image with auto-cropped bounding box at 2x DPI for crisp output." } },
             { "@type": "Question", "name": "Does it work on mobile?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Touch drawing works on phones and tablets. The tool is installable as a Progressive Web App for offline use of single-user mode." } },
             { "@type": "Question", "name": "How many people can join one board?", "acceptedAnswer": { "@type": "Answer", "text": "Up to 25 simultaneous users on a single board. For larger groups consider splitting into multiple boards." } }
@@ -390,11 +388,6 @@
         <div class="landing-title">Free Draw Board</div>
         <div class="landing-subtitle">Real-time collaborative whiteboard. No signup. No download. Share a password and draw together.</div>
         <button class="create-btn" id="createBtn">Create Board</button>
-        <div class="self-destruct-label">Self destructing board</div>
-        <div class="self-destruct-row">
-            <button class="sd-btn" id="create1hBtn">1 hour</button>
-            <button class="sd-btn" id="create24hBtn">24 hours</button>
-        </div>
         <div class="divider" aria-hidden="true">
             <div class="divider-line"></div>
             <span class="divider-text">or join existing</span>
@@ -404,7 +397,7 @@
             <input class="join-input" id="joinInput" type="text" placeholder="board password" autocomplete="off" spellcheck="false">
             <button class="join-btn" id="joinBtn">Join</button>
         </div>
-        <div class="landing-note">Each board gets a random password. Share the password to invite others. Ephemeral boards clear when you close the tab. 1-hour and 24-hour boards self-destruct on every device when the timer hits zero.</div>
+        <div class="landing-note">Each board gets a random password. Share the password to invite others. Drawings sync in real time and stay in your browser as long as you keep the tab open — export to PNG if you want to keep them.</div>
     </div>
 </div>
 
@@ -2191,8 +2184,6 @@ function init() {
 
     // Landing handlers
     document.getElementById('createBtn').addEventListener('click', () => createBoardInMode('e'));
-    document.getElementById('create1hBtn').addEventListener('click', () => createBoardInMode('h'));
-    document.getElementById('create24hBtn').addEventListener('click', () => createBoardInMode('d'));
 
     document.getElementById('joinBtn').addEventListener('click', () => {
         const raw = document.getElementById('joinInput').value || '';

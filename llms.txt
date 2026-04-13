@@ -1,6 +1,6 @@
 # freedrawboard.app
 
-> Free real-time collaborative whiteboard. Draw, sketch, brainstorm together with no signup. Password-protected rooms with optional self-destruct timer (1h or 24h). Part of Freesuite.
+> Free real-time collaborative whiteboard. Draw, sketch, brainstorm together with no signup. Password-protected rooms. Part of Freesuite.
 
 ## Key Facts
 
@@ -42,14 +42,6 @@
 - Move/resize broadcasts throttled to 10 updates per second during drag, final on release
 - Cursor positions throttled to 12 updates per second
 - Connection status shown in footer dot (green = connected, orange = reconnecting, red = lost)
-
-## Modes
-
-- **Ephemeral** (default) — board lives only while the tab is open; closing the tab wipes the local copy
-- **1 hour** — board self-destructs exactly 1 hour after creation across every device
-- **24 hours** — same as 1 hour but with a 24-hour lifetime
-
-The mode is encoded into the board URL itself, baked into the channel name. Editing the URL to "upgrade" 1h to 24h doesn't work — it routes to a different empty channel.
 
 ## Privacy
 
