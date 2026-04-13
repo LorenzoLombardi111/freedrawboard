@@ -30,6 +30,44 @@
             integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"
             crossorigin="anonymous"></script>
 
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "freedrawboard.app",
+        "description": "Free real-time collaborative whiteboard. Draw, sketch, brainstorm together with no signup. Password-protected rooms with optional self-destruct timer.",
+        "url": "https://freedrawboard.app/",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": [
+            "Real-time collaborative drawing",
+            "Pen, shapes, text, sticky notes, images",
+            "Multi-cursor with names",
+            "Password-protected rooms",
+            "Self-destruct timer (1h or 24h)",
+            "PNG export",
+            "No signup required"
+        ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            { "@type": "Question", "name": "Is freedrawboard.app really free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. 100% free with no signup, no ads, and no usage limits. Create as many boards as you want." } },
+            { "@type": "Question", "name": "How does collaboration work?", "acceptedAnswer": { "@type": "Answer", "text": "Create a board to get a strong auto-generated password (e.g., 'blue-otter-42-moon'). Anyone with that password can join the same board from any device. Drawings sync in real-time. You can see other participants' cursors with their names." } },
+            { "@type": "Question", "name": "Are my drawings stored on a server?", "acceptedAnswer": { "@type": "Answer", "text": "No. Drawings are relayed through Supabase Realtime but never written to any database. Your local copy lives in your browser's localStorage and is wiped if you choose a self-destruct mode." } },
+            { "@type": "Question", "name": "What is the self-destruct timer?", "acceptedAnswer": { "@type": "Answer", "text": "When creating a board, you can choose 1-hour or 24-hour mode. After that duration, all drawings are wiped from every participant's device simultaneously. The timer is baked into the board URL so it cannot be tampered with." } },
+            { "@type": "Question", "name": "How is freedrawboard.app different from Miro or Excalidraw?", "acceptedAnswer": { "@type": "Answer", "text": "Miro requires accounts and is heavyweight for quick use. Excalidraw is excellent for solo drawing but its collaboration features require account or paid sharing. Freedrawboard is instant — no account, password-protected rooms, ephemeral by default. For deep team workspaces use Miro; for quick collaborative sketches use freedrawboard." } },
+            { "@type": "Question", "name": "Can I export my whiteboard?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Click Export to download the current canvas as a PNG image with auto-cropped bounding box at 2x DPI for crisp output." } },
+            { "@type": "Question", "name": "Does it work on mobile?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Touch drawing works on phones and tablets. The tool is installable as a Progressive Web App for offline use of single-user mode." } },
+            { "@type": "Question", "name": "How many people can join one board?", "acceptedAnswer": { "@type": "Answer", "text": "Up to 25 simultaneous users on a single board. For larger groups consider splitting into multiple boards." } }
+        ]
+    }
+    </script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         :root {

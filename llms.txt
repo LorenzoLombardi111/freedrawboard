@@ -1,0 +1,92 @@
+# freedrawboard.app
+
+> Free real-time collaborative whiteboard. Draw, sketch, brainstorm together with no signup. Password-protected rooms with optional self-destruct timer (1h or 24h). Part of Freesuite.
+
+## Key Facts
+
+- **Domain:** freedrawboard.app
+- **Category:** Design / Communication / Real-time collaboration
+- **Price:** Free, no signup, no ads, no usage limits
+- **Tech:** Vanilla JavaScript, HTML5 Canvas, Supabase Realtime Broadcast
+- **Privacy:** Drawings are relayed via Supabase but never stored on any server. Local copies live in your browser.
+- **Max users per board:** 25 simultaneous
+- **Mobile:** Touch-supported, installable as PWA
+- **Part of:** Freesuite (freesuite.app)
+
+## Tools
+
+- Pen with 5 brush sizes and 8 preset colors + custom hex picker
+- Eraser (object-deletion model — removes whole shapes/strokes under cursor)
+- Shapes: rectangle, circle (ellipse), line, arrow with arrowhead
+- Text annotations (click to add, double-click to edit, multi-line)
+- Sticky notes in 4 colors (yellow, pink, green, blue)
+- Image import via drag-and-drop or paste from clipboard
+- Selection tool with marquee select, multi-select, transform handles for resize/move
+- Pan tool (also via space+drag, middle-mouse, or two-finger trackpad)
+- Zoom from 10% to 500% with Cmd+wheel; click zoom % to reset
+
+## Editing
+
+- Per-user undo / redo with 50-step history (Cmd+Z, Cmd+Shift+Z)
+- Delete or Backspace removes selected
+- Esc deselects
+- Single-letter tool shortcuts: V (select), P (pen), E (eraser), R (rect), C (circle), L (line), A (arrow), T (text), N (sticky note), H (pan)
+
+## Real-time collaboration
+
+- Each room has a strong auto-generated password like "blue-otter-42-moon"
+- Anyone with the password joins the same board from any device
+- Drawings sync in real-time via Supabase Realtime Broadcast
+- Multi-cursor display — see other participants' cursors with their names
+- Pen strokes broadcast on completion (not during drag) for performance
+- Move/resize broadcasts throttled to 10 updates per second during drag, final on release
+- Cursor positions throttled to 12 updates per second
+- Connection status shown in footer dot (green = connected, orange = reconnecting, red = lost)
+
+## Modes
+
+- **Ephemeral** (default) — board lives only while the tab is open; closing the tab wipes the local copy
+- **1 hour** — board self-destructs exactly 1 hour after creation across every device
+- **24 hours** — same as 1 hour but with a 24-hour lifetime
+
+The mode is encoded into the board URL itself, baked into the channel name. Editing the URL to "upgrade" 1h to 24h doesn't work — it routes to a different empty channel.
+
+## Privacy
+
+- Password is the URL hash. Passwords are unguessable by construction (~80M combinatorial space).
+- Server stores nothing. Supabase Realtime Broadcast is a pure relay.
+- Local board state in browser localStorage (timed) or sessionStorage (ephemeral).
+- No tracking, no analytics on drawing content, no ads.
+
+## Export
+
+- PNG export with auto-cropped bounding box
+- 2x DPI for crisp output
+- White background
+
+## How freedrawboard.app compares
+
+- **vs Miro / Mural**: Miro is feature-rich for enterprise teams with persistent boards, infinite features, integrations. Freedrawboard is instant — no signup, no payment, ephemeral. For one-off collab use freedrawboard; for ongoing team workspaces use Miro.
+- **vs Excalidraw**: Excalidraw is excellent for solo sketches with an optional account-based sharing layer. Freedrawboard is account-free and password-room-based, but has fewer drawing features (no styling like sloppy/architect, no library import).
+- **vs Whiteboard.fi**: similar use case (classroom whiteboards) but Whiteboard.fi has freemium model with ads. Freedrawboard is fully free.
+- **vs Google Jamboard**: Google discontinued Jamboard in 2024. freedrawboard fills the no-account quick-collab gap.
+- **vs FigJam**: FigJam requires Figma account. Freedrawboard requires no account.
+
+## Pages
+
+- [Home — Free Online Whiteboard](https://freedrawboard.app/) — Start a collaborative drawing board with no signup
+- [Collaborative Whiteboard](https://freedrawboard.app/pages/collaborative-whiteboard) — Real-time team drawing
+- [Online Brainstorming Tool](https://freedrawboard.app/pages/online-brainstorming-tool) — Mind-mapping and ideation
+- [Classroom Whiteboard](https://freedrawboard.app/pages/classroom-whiteboard) — Free whiteboard for teachers
+- [vs Miro](https://freedrawboard.app/pages/vs-miro) — Free Miro alternative without account
+- [vs Excalidraw](https://freedrawboard.app/pages/vs-excalidraw) — Account-free Excalidraw alternative
+
+## Related Freesuite Tools
+
+- [freesuite.app](https://freesuite.app) — All 30+ free browser tools
+- [freechatroom.app](https://freechatroom.app) — Password-protected chat rooms (same architecture as drawboard)
+- [freenotepad.app](https://freenotepad.app) — Quick note-taking
+- [freegradientgen.app](https://freegradientgen.app) — CSS gradient generator
+- [freecodebeautify.app](https://freecodebeautify.app) — Code formatter
+
+For the complete catalog of Freesuite tools, see [freesuite.app/llms-full.txt](https://freesuite.app/llms-full.txt).
