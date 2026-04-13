@@ -1,7 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#faf9f6"/>
-  <rect x="2" y="2" width="26" height="26" rx="5" fill="#C49A2A"/>
-  <rect x="36" y="2" width="26" height="26" rx="5" fill="#1a1917"/>
-  <rect x="2" y="36" width="26" height="26" rx="5" fill="#1a1917"/>
-  <rect x="36" y="36" width="26" height="26" rx="5" fill="#C49A2A"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Gold rounded background, matching freepage / freeslides style -->
+  <rect width="32" height="32" rx="6" fill="#C49A2A"/>
+  <!-- White whiteboard surface -->
+  <rect x="5" y="7" width="22" height="18" rx="2" fill="#fff"/>
+  <!-- Drawn freehand stroke -->
+  <path d="M8 17 C 11 12, 14 22, 17 16 S 22 14, 24 17" stroke="#1a1917" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Pen-tip dot at end of stroke to suggest live drawing -->
+  <circle cx="24" cy="17" r="1.8" fill="#1a1917"/>
 </svg>

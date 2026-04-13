@@ -1,4 +1,4 @@
-const CACHE_NAME = 'freedrawboard-v1';
+const CACHE_NAME = 'freedrawboard-v2';
 const ASSETS = [
   '/',
   '/index.html',
