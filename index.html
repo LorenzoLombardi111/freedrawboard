@@ -26,6 +26,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.0/dist/umd/supabase.min.js"
+            integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"
+            crossorigin="anonymous"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -133,6 +136,67 @@
         .toast { position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text-primary); color: var(--bg); font-family: var(--font-ui); font-size: 13px; padding: 10px 20px; border-radius: 8px; opacity: 0; transition: all 0.2s ease; z-index: 1000; white-space: nowrap; pointer-events: none; }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+        /* Room info in header (visible only when in a room) */
+        .room-info { display: none; align-items: center; gap: 6px; margin-left: 8px; }
+        .room-info.active { display: inline-flex; }
+        .room-pill { font-family: var(--font-ui); font-size: 12px; font-weight: 600; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: all 0.15s ease; }
+        .room-pill:hover { background: var(--border); border-color: var(--text-muted); }
+        .room-pill::before { content: '🔑'; font-size: 11px; flex-shrink: 0; }
+        .mode-indicator { font-family: var(--font-ui); font-size: 11px; font-weight: 500; color: var(--text-muted); padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+        .mode-indicator.expiring { color: var(--destructive); border-color: var(--destructive); }
+        .online-badge { font-family: var(--font-ui); font-size: 11px; font-weight: 500; color: var(--text-muted); padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; }
+        .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #27ae60; }
+
+        /* Connection status dot */
+        .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); display: inline-block; transition: background 0.15s ease; }
+        .conn-dot.connected { background: #27ae60; }
+        .conn-dot.reconnecting { background: #e67e22; animation: pulse 1s ease-in-out infinite; }
+        .conn-dot.disconnected { background: var(--destructive); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Landing view */
+        .landing { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 200; overflow-y: auto; }
+        .landing.hidden { display: none; }
+        .landing-card { width: 100%; max-width: 420px; text-align: center; padding: 24px 0; }
+        .landing-icon { font-size: 56px; margin-bottom: 16px; line-height: 1; }
+        .landing-title { font-family: var(--font-ui); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 8px; }
+        .landing-subtitle { font-family: var(--font-ui); font-size: 15px; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.5; }
+        .create-btn { width: 100%; font-family: var(--font-ui); font-size: 15px; font-weight: 600; background: var(--accent); color: var(--accent-text); border: none; border-radius: 8px; padding: 14px 24px; cursor: pointer; transition: all 0.15s ease; }
+        .create-btn:hover { background: var(--accent-hover); }
+        .self-destruct-label { font-family: var(--font-ui); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 16px; margin-bottom: 8px; text-align: center; }
+        .self-destruct-row { display: flex; gap: 8px; }
+        .sd-btn { flex: 1; font-family: var(--font-ui); font-size: 13px; font-weight: 500; background: transparent; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; cursor: pointer; transition: all 0.15s ease; }
+        .sd-btn:hover { background: var(--surface); color: var(--text-primary); border-color: var(--text-muted); }
+        .divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; }
+        .divider-line { flex: 1; height: 1px; background: var(--border); }
+        .divider-text { font-family: var(--font-ui); font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .join-row { display: flex; gap: 8px; }
+        .join-input { flex: 1; font-family: var(--font-ui); font-size: 15px; font-weight: 500; background: var(--bg); border: 2px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text-primary); transition: all 0.15s ease; min-width: 0; text-align: center; }
+        .join-input:focus { outline: none; border-color: var(--accent); }
+        .join-btn { font-family: var(--font-ui); font-size: 13px; font-weight: 500; background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; cursor: pointer; transition: all 0.15s ease; }
+        .join-btn:hover { background: var(--border); color: var(--text-primary); }
+        .landing-note { font-family: var(--font-ui); font-size: 12px; color: var(--text-muted); margin-top: 24px; line-height: 1.5; }
+
+        /* Modals */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; align-items: center; justify-content: center; padding: 24px; animation: fadeIn 0.15s ease; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 100%; max-width: 380px; box-shadow: var(--shadow-lg); animation: slideUp 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-title { font-family: var(--font-ui); font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; }
+        .modal-label { font-family: var(--font-ui); font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+        .modal-body { font-family: var(--font-ui); font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; }
+        .modal-input { width: 100%; font-family: var(--font-ui); font-size: 16px; background: var(--surface); border: 2px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text-primary); margin-bottom: 12px; }
+        .modal-input:focus { outline: none; border-color: var(--accent); }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+        .modal-actions button { font-family: var(--font-ui); font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; border: none; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border) !important; color: var(--text-secondary); }
+        .btn-cancel:hover { background: var(--surface); }
+        .btn-save { background: var(--accent); color: var(--accent-text); }
+        .btn-save:hover { background: var(--accent-hover); }
+        .share-value { font-family: 'JetBrains Mono', "Courier New", monospace; font-size: 14px; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; word-break: break-all; user-select: all; }
+        .share-link { font-size: 12px; }
+
         /* Mobile adjustments */
         @media (max-width: 768px) {
             .toolbar { top: 60px; gap: 2px; padding: 4px; }
@@ -161,6 +225,13 @@
             </svg>
             freedrawboard.app
         </a>
+        <div class="room-info" id="roomInfo">
+            <button class="room-pill" id="roomPill" type="button" aria-label="Share room">
+                <span id="roomPillLabel">connecting...</span>
+            </button>
+            <span class="mode-indicator" id="modeIndicator" style="display:none"></span>
+            <span class="online-badge" id="onlineBadge"><span class="online-dot"></span><span id="onlineCount">1</span></span>
+        </div>
         <div class="header-actions">
             <button class="header-btn" id="undoBtn" aria-label="Undo (Cmd+Z)" title="Undo">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
@@ -176,6 +247,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 <span>Clear</span>
             </button>
+            <button class="header-btn" id="leaveBtn" style="display:none; color: var(--destructive)" aria-label="Leave room">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Leave</span>
+            </button>
             <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode"><span id="themeLabel">Dark</span></button>
         </div>
     </header>
@@ -187,7 +262,7 @@
     </div>
 
     <div class="status-bar">
-        <span class="status-left"><span id="statusInfo">Ready</span></span>
+        <span class="status-left"><span class="conn-dot" id="connDot"></span> <span id="statusInfo">Ready</span></span>
         <span class="status-right">
             <span class="zoom-controls">
                 <button class="zoom-btn" id="zoomOutBtn" aria-label="Zoom out">&minus;</button>
@@ -270,6 +345,70 @@
     </div>
 </div>
 
+<!-- Landing view -->
+<div class="landing" id="landing">
+    <div class="landing-card">
+        <div class="landing-icon">🎨</div>
+        <div class="landing-title">Free Draw Board</div>
+        <div class="landing-subtitle">Real-time collaborative whiteboard. No signup. No download. Share a password and draw together.</div>
+        <button class="create-btn" id="createBtn">Create Board</button>
+        <div class="self-destruct-label">Self destructing board</div>
+        <div class="self-destruct-row">
+            <button class="sd-btn" id="create1hBtn">1 hour</button>
+            <button class="sd-btn" id="create24hBtn">24 hours</button>
+        </div>
+        <div class="divider" aria-hidden="true">
+            <div class="divider-line"></div>
+            <span class="divider-text">or join existing</span>
+            <div class="divider-line"></div>
+        </div>
+        <div class="join-row">
+            <input class="join-input" id="joinInput" type="text" placeholder="board password" autocomplete="off" spellcheck="false">
+            <button class="join-btn" id="joinBtn">Join</button>
+        </div>
+        <div class="landing-note">Each board gets a random password. Share the password to invite others. Ephemeral boards clear when you close the tab. 1-hour and 24-hour boards self-destruct on every device when the timer hits zero.</div>
+    </div>
+</div>
+
+<!-- Share Room Modal -->
+<div class="modal-overlay" id="shareModal">
+    <div class="modal-card">
+        <div class="modal-title">Share this board</div>
+        <div class="modal-label">Board password</div>
+        <div class="share-value" id="shareValue"></div>
+        <div class="modal-label" style="margin-top:8px">Or share the link</div>
+        <div class="share-value share-link" id="shareLink"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" id="shareCloseBtn">Close</button>
+            <button class="btn-save" id="shareCopyLinkBtn">Copy link</button>
+            <button class="btn-save" id="shareCopyPwdBtn">Copy password</button>
+        </div>
+    </div>
+</div>
+
+<!-- Expired Room Modal -->
+<div class="modal-overlay" id="expiredModal">
+    <div class="modal-card">
+        <div class="modal-title">This board has ended</div>
+        <div class="modal-body" id="expiredBody">All drawings are gone and can't be recovered.</div>
+        <div class="modal-actions">
+            <button class="btn-save" id="expiredNewBtn">Start new board</button>
+        </div>
+    </div>
+</div>
+
+<!-- Clear All Confirm Modal -->
+<div class="modal-overlay" id="clearAllModal">
+    <div class="modal-card">
+        <div class="modal-title">Clear the canvas for everyone?</div>
+        <div class="modal-body">Every participant will see their canvas wiped. This cannot be undone.</div>
+        <div class="modal-actions">
+            <button class="btn-cancel" id="clearAllCancelBtn">Cancel</button>
+            <button class="btn-save" id="clearAllConfirmBtn" style="background: var(--destructive)">Clear for everyone</button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -279,9 +418,21 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const STORAGE_KEY = 'freedrawboard_state_v1';
+const STORAGE_KEY_BASE = 'freedrawboard_state_v1';
 const MAX_UNDO = 50;
 const ERASER_RADIUS = 10; // in canvas px
+const SUPABASE_URL = 'https://rvqxvwhcibyazmzpemwi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2cXh2d2hjaWJ5YXptenBlbXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMTMyNTEsImV4cCI6MjA5MTU4OTI1MX0.Y34TXJIS2UeqCD9yvXlAlZN2naJXMHp5cDqSUMIYepg';
+const MODE_DURATIONS = { h: 3600, d: 86400 };
+const CURSOR_THROTTLE_MS = 80;
+const UPDATE_THROTTLE_MS = 100;
+
+// Word lists for memorable room passwords (same pattern as freechatroom)
+const PW_ADJ = ['blue','bold','brave','bright','calm','cool','crisp','cyan','dark','deep','dusty','fair','fast','fine','fresh','gentle','glad','golden','happy','hazel','ivory','jade','jolly','keen','kind','lazy','light','lime','lively','loud','lucky','lush','mellow','merry','mild','misty','nifty','noble','odd','olive','pale','peach','plain','plum','proud','quick','quiet','rapid','rosy','royal','rustic','sharp','shiny','silky','silver','slick','smooth','snowy','soft','solar','spry','still','sunny','swift','tame','tart','teal','tender','tiny','tough','vivid','warm','weary','whole','wild','wise','witty','young'];
+const PW_NOUN = ['acorn','anchor','apple','arrow','badger','beach','birch','blossom','boulder','branch','brook','canyon','cedar','cliff','cloud','clover','comet','coral','crest','crow','dawn','delta','dew','dune','eagle','ember','falcon','fern','field','finch','flame','forest','fox','frost','galaxy','garden','glade','gulf','harbor','heron','hill','honey','horizon','island','kestrel','lagoon','lake','lark','leaf','lily','lotus','marsh','meadow','meteor','mist','moon','moss','mountain','nest','oak','ocean','orchid','otter','owl','palm','peak','pearl','petal','pine','planet','pond','poppy','prairie','puma','quartz','raven','reef','ridge','river','robin','salmon','seed','shore','sky','sparrow','spring','star','stone','stream','summit','swan','thistle','tide','tiger','trout','tulip','valley','violet','wave','willow','wind','wolf','wren'];
+
+// User palette for cursor colors
+const USER_COLORS = ['#e74c3c','#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#16a085','#d35400','#c0392b','#2c3e50'];
 
 // ============================================================
 // STATE
@@ -311,6 +462,51 @@ const state = {
     cursor: { x: 0, y: 0 }    // canvas-space cursor
 };
 
+// Room / Supabase state
+const room = {
+    fullHash: null,         // URL hash (e.g., "blue-otter-42-moon" or "h-ts-...")
+    mode: null,             // 'e' | 'h' | 'd'
+    core: null,             // password (hash without prefix)
+    createdAt: null,
+    expiresAt: null,
+    client: null,
+    channel: null,
+    connected: false,
+    cursors: new Map(),     // userId -> { x, y, name, color, lastSeen }
+    expiryTickInterval: null,
+    expiryCheckInterval: null,
+    suppressBroadcast: false // when applying remote events
+};
+
+let lastCursorBroadcast = 0;
+const updateThrottleMap = new Map(); // objectId -> last update timestamp
+
+// User identity
+const userId = (function() {
+    try {
+        let u = localStorage.getItem('freedraw_uid');
+        if (!u) { u = uid(); localStorage.setItem('freedraw_uid', u); }
+        return u;
+    } catch (e) { return uid(); }
+})();
+const tabId = Math.random().toString(36).slice(2, 12);
+const presenceKey = `${userId}-${tabId}`;
+const userName = (function() {
+    try {
+        let n = localStorage.getItem('freedraw_name');
+        if (!n) { n = generateUserName(); localStorage.setItem('freedraw_name', n); }
+        return n;
+    } catch (e) { return generateUserName(); }
+})();
+const userColor = USER_COLORS[Math.abs(hashStr(userId)) % USER_COLORS.length];
+
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i); return h; }
+function generateUserName() {
+    const adj = ['Swift','Bright','Cool','Quick','Bold','Kind','Keen','Sharp','Witty','Happy','Brave','Clever','Calm','Fresh'];
+    const noun = ['Fox','Star','Wave','Owl','Bear','Hawk','Sage','Reed','Pine','Hare','Lynx','Wolf','Wren','Otter'];
+    return adj[Math.floor(Math.random()*adj.length)] + noun[Math.floor(Math.random()*noun.length)] + Math.floor(Math.random()*100);
+}
+
 let bgCanvas, mainCanvas, overlayCanvas, bgCtx, mainCtx, overlayCtx;
 let canvasArea;
 let dpr = window.devicePixelRatio || 1;
@@ -320,6 +516,39 @@ let needsRender = true;
 // HELPERS
 // ============================================================
 function uid() { return Math.random().toString(36).slice(2, 11); }
+
+// ============================================================
+// ROOM HASH / PASSWORD GENERATION
+// ============================================================
+function generateMemorablePassword() {
+    const pick = a => a[Math.floor(Math.random() * a.length)];
+    const num = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `${pick(PW_ADJ)}-${pick(PW_NOUN)}-${num}-${pick(PW_NOUN)}`;
+}
+
+function generateRoomId(mode) {
+    const pwd = generateMemorablePassword();
+    if (mode !== 'h' && mode !== 'd') return pwd;
+    return `${mode}-${Math.floor(Date.now() / 1000).toString(36)}-${pwd}`;
+}
+
+function parseRoomHash(hash) {
+    if (!hash) return { mode: 'e', core: '', createdAt: null, expiresAt: null, full: '', valid: false };
+    const m = /^([hd])-([a-z0-9]{5,10})-([a-z0-9][a-z0-9-]{2,80})$/i.exec(hash);
+    if (m) {
+        const mode = m[1].toLowerCase();
+        const ts = parseInt(m[2], 36);
+        if (!isFinite(ts) || ts < 1000000000) return { mode: 'e', core: hash.toLowerCase(), createdAt: null, expiresAt: null, full: hash.toLowerCase(), valid: true };
+        return { mode, core: m[3].toLowerCase(), createdAt: ts, expiresAt: ts + MODE_DURATIONS[mode], full: hash.toLowerCase(), valid: true };
+    }
+    if (/^[a-z0-9][a-z0-9-]{2,80}$/i.test(hash)) {
+        return { mode: 'e', core: hash.toLowerCase(), createdAt: null, expiresAt: null, full: hash.toLowerCase(), valid: true };
+    }
+    return { mode: 'e', core: '', createdAt: null, expiresAt: null, full: '', valid: false };
+}
+
+// Per-room storage key — local canvas history stored per room
+function storageKey() { return room.fullHash ? `${STORAGE_KEY_BASE}_${room.fullHash}` : STORAGE_KEY_BASE; }
 
 function showToast(text) {
     const el = document.getElementById('toast');
@@ -479,25 +708,41 @@ function updateUndoButtons() {
 function persistState() {
     try {
         const data = {
-            objects: Array.from(state.objects.entries()),
+            objects: Array.from(state.objects.entries()).map(([id, o]) => {
+                // Strip _img (not serializable), keep src
+                const clean = { ...o };
+                delete clean._img;
+                return [id, clean];
+            }),
             objectOrder: state.objectOrder,
             pan: state.pan,
             zoom: state.zoom
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        // For ephemeral mode: use sessionStorage. For timed: localStorage with TTL check on load.
+        const storage = (room.mode === 'h' || room.mode === 'd') ? localStorage : sessionStorage;
+        storage.setItem(storageKey(), JSON.stringify(data));
     } catch (e) { /* quota — ignore */ }
 }
 
 function loadState() {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        // Try sessionStorage first (ephemeral), then localStorage (timed)
+        const sessionRaw = sessionStorage.getItem(storageKey());
+        const localRaw = localStorage.getItem(storageKey());
+        const raw = sessionRaw || localRaw;
         if (!raw) return;
+        // For timed rooms: discard if past expiry
+        if (room.expiresAt && Date.now() / 1000 > room.expiresAt) return;
         const data = JSON.parse(raw);
         if (data.objects) state.objects = new Map(data.objects);
         if (data.objectOrder) state.objectOrder = data.objectOrder;
         if (data.pan) state.pan = data.pan;
         if (typeof data.zoom === 'number') state.zoom = data.zoom;
     } catch (e) { /* ignore corrupt */ }
+}
+
+function clearLocalRoomState() {
+    try { sessionStorage.removeItem(storageKey()); localStorage.removeItem(storageKey()); } catch (e) {}
 }
 
 // ============================================================
@@ -525,9 +770,11 @@ function deleteObject(id, options) {
 function deleteSelected() {
     if (state.selectedIds.size === 0) return;
     pushUndo();
-    for (const id of state.selectedIds) {
+    const ids = [...state.selectedIds];
+    for (const id of ids) {
         state.objects.delete(id);
         state.objectOrder = state.objectOrder.filter(x => x !== id);
+        broadcastObjectDelete(id);
     }
     state.selectedIds.clear();
     needsRender = true;
@@ -536,13 +783,384 @@ function deleteSelected() {
 
 function clearAll() {
     if (state.objects.size === 0) return;
-    if (!confirm('Clear the entire canvas? This cannot be undone (after one undo).')) return;
+    // If in a room, show a confirm modal that explains it'll wipe for everyone
+    if (room.connected) {
+        document.getElementById('clearAllModal').classList.add('active');
+        return;
+    }
+    if (!confirm('Clear the entire canvas?')) return;
     pushUndo();
     state.objects.clear();
     state.objectOrder = [];
     state.selectedIds.clear();
     needsRender = true;
     persistState();
+}
+
+function performClearAllForEveryone() {
+    document.getElementById('clearAllModal').classList.remove('active');
+    pushUndo();
+    state.objects.clear();
+    state.objectOrder = [];
+    state.selectedIds.clear();
+    needsRender = true;
+    persistState();
+    broadcastClearAll();
+}
+
+// ============================================================
+// SUPABASE / REALTIME ROOM
+// ============================================================
+function setConnectionStatus(status, label) {
+    const dot = document.getElementById('connDot');
+    const info = document.getElementById('statusInfo');
+    if (dot) {
+        dot.classList.remove('connected', 'reconnecting', 'disconnected');
+        if (status) dot.classList.add(status);
+    }
+    if (info && label) info.textContent = label;
+}
+
+function updateOnlineCount() {
+    const el = document.getElementById('onlineCount');
+    if (!el) return;
+    // Count = others + me
+    el.textContent = (room.cursors.size + 1).toString();
+}
+
+function showRoomInfo(parsed) {
+    document.getElementById('roomInfo').classList.add('active');
+    document.getElementById('leaveBtn').style.display = '';
+    const pillLabel = document.getElementById('roomPillLabel');
+    pillLabel.textContent = parsed.core || parsed.full || '';
+    updateModeIndicator();
+}
+
+function hideRoomInfo() {
+    document.getElementById('roomInfo').classList.remove('active');
+    document.getElementById('leaveBtn').style.display = 'none';
+    document.getElementById('modeIndicator').style.display = 'none';
+}
+
+function updateModeIndicator() {
+    const el = document.getElementById('modeIndicator');
+    if (!el) return;
+    if (room.mode === 'e') {
+        el.textContent = '⚡ Ephemeral';
+        el.style.display = 'inline-flex';
+        el.classList.remove('expiring');
+    } else if (room.mode === 'h' || room.mode === 'd') {
+        el.style.display = 'inline-flex';
+        renderCountdown();
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+function renderCountdown() {
+    const el = document.getElementById('modeIndicator');
+    if (!el || !room.expiresAt) return;
+    const left = Math.max(0, Math.floor(room.expiresAt - Date.now() / 1000));
+    let label;
+    if (left < 3600) {
+        const m = Math.floor(left / 60), s = left % 60;
+        label = `${m}:${String(s).padStart(2,'0')}`;
+    } else if (left < 24 * 3600 && room.mode === 'd' && left < 7200) {
+        const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+        label = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    } else {
+        const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60);
+        label = `${h}h ${m}m`;
+    }
+    el.textContent = `🕐 ${label}`;
+    if (left < 60) el.classList.add('expiring'); else el.classList.remove('expiring');
+}
+
+function startExpiryTimer() {
+    stopExpiryTimer();
+    if (room.mode === 'e' || !room.expiresAt) return;
+    room.expiryTickInterval = setInterval(renderCountdown, 1000);
+    room.expiryCheckInterval = setInterval(() => {
+        if (room.expiresAt && Date.now() / 1000 > room.expiresAt) triggerExpiry();
+    }, 30000);
+    renderCountdown();
+}
+
+function stopExpiryTimer() {
+    if (room.expiryTickInterval) { clearInterval(room.expiryTickInterval); room.expiryTickInterval = null; }
+    if (room.expiryCheckInterval) { clearInterval(room.expiryCheckInterval); room.expiryCheckInterval = null; }
+}
+
+function triggerExpiry() {
+    const expiredAt = room.expiresAt;
+    clearLocalRoomState();
+    leaveRoom();
+    showExpiredOverlay(expiredAt);
+}
+
+function showExpiredOverlay(expiredAt) {
+    const body = document.getElementById('expiredBody');
+    if (expiredAt) {
+        const ago = Math.max(0, Math.floor(Date.now() / 1000 - expiredAt));
+        let agoStr = 'just now';
+        if (ago >= 3600) agoStr = `${Math.floor(ago/3600)} hour${ago>=7200?'s':''} ago`;
+        else if (ago >= 60) agoStr = `${Math.floor(ago/60)} minute${ago>=120?'s':''} ago`;
+        body.textContent = `This board ended ${agoStr}. All drawings are gone and can't be recovered.`;
+    } else {
+        body.textContent = "All drawings are gone and can't be recovered.";
+    }
+    document.getElementById('expiredModal').classList.add('active');
+}
+
+async function connectToRoom(hash) {
+    const parsed = parseRoomHash(hash);
+    if (!parsed.valid) { showToast('Invalid board password'); showLanding(); return; }
+
+    // Already-expired link — bail before connecting
+    if (parsed.expiresAt && Date.now() / 1000 > parsed.expiresAt) {
+        showExpiredOverlay(parsed.expiresAt);
+        showLanding();
+        return;
+    }
+
+    // Update room state
+    Object.assign(room, {
+        fullHash: parsed.full,
+        mode: parsed.mode,
+        core: parsed.core,
+        createdAt: parsed.createdAt,
+        expiresAt: parsed.expiresAt
+    });
+
+    // Reset canvas state, then load any local history for this room
+    state.objects = new Map();
+    state.objectOrder = [];
+    state.selectedIds.clear();
+    state.undoStack = [];
+    state.redoStack = [];
+    loadState();
+    rehydrateImages();
+    needsRender = true;
+
+    showRoomInfo(parsed);
+    startExpiryTimer();
+
+    // Hide landing
+    document.getElementById('landing').classList.add('hidden');
+
+    setConnectionStatus('reconnecting', 'Connecting...');
+
+    // Init Supabase client (singleton)
+    if (!room.client) {
+        room.client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            realtime: { params: { eventsPerSecond: 20 } }
+        });
+    }
+
+    const channelName = `draw-${parsed.full}`;
+    room.channel = room.client.channel(channelName, {
+        config: {
+            broadcast: { self: false, ack: false },
+            presence: { key: presenceKey }
+        }
+    });
+
+    room.channel
+        .on('broadcast', { event: 'object_add' }, ({ payload }) => handleRemoteObjectAdd(payload))
+        .on('broadcast', { event: 'object_update' }, ({ payload }) => handleRemoteObjectUpdate(payload))
+        .on('broadcast', { event: 'object_delete' }, ({ payload }) => handleRemoteObjectDelete(payload))
+        .on('broadcast', { event: 'clear_all' }, ({ payload }) => handleRemoteClearAll(payload))
+        .on('broadcast', { event: 'cursor' }, ({ payload }) => handleRemoteCursor(payload))
+        .on('presence', { event: 'sync' }, () => syncPresence())
+        .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+            for (const p of leftPresences) {
+                room.cursors.delete(p.user_id);
+            }
+            updateOnlineCount();
+            needsRender = true;
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                room.connected = true;
+                setConnectionStatus('connected', `Connected · ${parsed.core || parsed.full}`);
+                await room.channel.track({ user_id: userId, name: userName, color: userColor });
+            } else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
+                room.connected = false;
+                setConnectionStatus('disconnected', 'Connection lost. Reconnecting...');
+            }
+        });
+}
+
+function syncPresence() {
+    // Just update the count — actual cursor positions come via cursor events
+    updateOnlineCount();
+}
+
+function leaveRoom() {
+    stopExpiryTimer();
+    if (room.channel) {
+        try { room.channel.untrack(); room.channel.unsubscribe(); } catch (e) {}
+        room.channel = null;
+    }
+    room.fullHash = null;
+    room.mode = null;
+    room.core = null;
+    room.createdAt = null;
+    room.expiresAt = null;
+    room.connected = false;
+    room.cursors.clear();
+    state.objects = new Map();
+    state.objectOrder = [];
+    state.selectedIds.clear();
+    state.undoStack = [];
+    state.redoStack = [];
+    needsRender = true;
+    hideRoomInfo();
+    setConnectionStatus(null, 'Ready');
+    window.location.hash = '';
+    showLanding();
+}
+
+// ============================================================
+// BROADCAST WRAPPERS
+// ============================================================
+function broadcastObjectAdd(o) {
+    if (!room.channel || !room.connected || room.suppressBroadcast) return;
+    // Strip image element before serializing
+    const clean = { ...o };
+    delete clean._img;
+    room.channel.send({ type: 'broadcast', event: 'object_add', payload: { object: clean, by: userId } });
+}
+
+function broadcastObjectUpdate(o) {
+    if (!room.channel || !room.connected || room.suppressBroadcast) return;
+    const clean = { ...o };
+    delete clean._img;
+    room.channel.send({ type: 'broadcast', event: 'object_update', payload: { object: clean, by: userId } });
+}
+
+function broadcastObjectDelete(id) {
+    if (!room.channel || !room.connected || room.suppressBroadcast) return;
+    room.channel.send({ type: 'broadcast', event: 'object_delete', payload: { id, by: userId } });
+}
+
+function broadcastClearAll() {
+    if (!room.channel || !room.connected || room.suppressBroadcast) return;
+    room.channel.send({ type: 'broadcast', event: 'clear_all', payload: { by: userName } });
+}
+
+function broadcastCursor(x, y) {
+    if (!room.channel || !room.connected) return;
+    const now = Date.now();
+    if (now - lastCursorBroadcast < CURSOR_THROTTLE_MS) return;
+    lastCursorBroadcast = now;
+    room.channel.send({ type: 'broadcast', event: 'cursor', payload: { userId, name: userName, color: userColor, x, y } });
+}
+
+// Throttled batch update for the dragged/resized object
+function broadcastObjectUpdateThrottled(o) {
+    if (!room.channel || !room.connected || room.suppressBroadcast) return;
+    const now = Date.now();
+    const last = updateThrottleMap.get(o.id) || 0;
+    if (now - last < UPDATE_THROTTLE_MS) return;
+    updateThrottleMap.set(o.id, now);
+    broadcastObjectUpdate(o);
+}
+
+// ============================================================
+// REMOTE EVENT HANDLERS (apply without rebroadcast)
+// ============================================================
+function handleRemoteObjectAdd(payload) {
+    if (!payload || !payload.object) return;
+    if (payload.by === userId) return;
+    const o = payload.object;
+    if (state.objects.has(o.id)) return; // already have it (race)
+    if (o.type === 'image' && o.src) {
+        const img = new Image();
+        img.onload = () => { needsRender = true; };
+        img.src = o.src;
+        o._img = img;
+    }
+    room.suppressBroadcast = true;
+    addObject(o, { skipUndo: true });
+    room.suppressBroadcast = false;
+}
+
+function handleRemoteObjectUpdate(payload) {
+    if (!payload || !payload.object) return;
+    if (payload.by === userId) return;
+    const o = payload.object;
+    const existing = state.objects.get(o.id);
+    if (!existing) {
+        // Treat as add if we don't have it
+        return handleRemoteObjectAdd(payload);
+    }
+    // Preserve _img reference if present
+    if (existing.type === 'image' && existing._img) o._img = existing._img;
+    state.objects.set(o.id, o);
+    needsRender = true;
+    persistState();
+}
+
+function handleRemoteObjectDelete(payload) {
+    if (!payload || !payload.id) return;
+    if (payload.by === userId) return;
+    if (!state.objects.has(payload.id)) return;
+    state.objects.delete(payload.id);
+    state.objectOrder = state.objectOrder.filter(x => x !== payload.id);
+    state.selectedIds.delete(payload.id);
+    needsRender = true;
+    persistState();
+}
+
+function handleRemoteClearAll(payload) {
+    state.objects.clear();
+    state.objectOrder = [];
+    state.selectedIds.clear();
+    needsRender = true;
+    persistState();
+    showToast(`${(payload && payload.by) || 'Someone'} cleared the board`);
+}
+
+function handleRemoteCursor(payload) {
+    if (!payload || !payload.userId) return;
+    if (payload.userId === userId) return;
+    room.cursors.set(payload.userId, {
+        x: payload.x, y: payload.y, name: payload.name, color: payload.color, lastSeen: Date.now()
+    });
+    needsRender = true;
+}
+
+// ============================================================
+// LANDING / SHARE UI
+// ============================================================
+function showLanding() {
+    document.getElementById('landing').classList.remove('hidden');
+}
+
+function hideLanding() {
+    document.getElementById('landing').classList.add('hidden');
+}
+
+function createBoardInMode(mode) {
+    const newHash = generateRoomId(mode);
+    window.location.hash = newHash;
+    connectToRoom(newHash).then(() => {
+        // Show share modal so creator can immediately copy/share
+        setTimeout(() => openShareModal(), 400);
+    });
+}
+
+function openShareModal() {
+    if (!room.fullHash) return;
+    const link = window.location.origin + window.location.pathname + '#' + room.fullHash;
+    document.getElementById('shareValue').textContent = room.fullHash;
+    document.getElementById('shareLink').textContent = link;
+    document.getElementById('shareModal').classList.add('active');
+}
+
+function closeShareModal() {
+    document.getElementById('shareModal').classList.remove('active');
 }
 
 // ============================================================
@@ -779,7 +1397,7 @@ function render() {
 
     mainCtx.restore();
 
-    // Eraser preview overlay
+    // Overlay layer: eraser preview + remote cursors
     overlayCtx.clearRect(0, 0, w, h);
     if (state.tool === 'eraser') {
         const screenP = canvasToScreen(state.cursor.x, state.cursor.y);
@@ -789,6 +1407,56 @@ function render() {
         overlayCtx.arc(screenP.x, screenP.y, ERASER_RADIUS * state.zoom, 0, Math.PI * 2);
         overlayCtx.stroke();
     }
+
+    // Remote cursors
+    const now = Date.now();
+    for (const [id, c] of room.cursors) {
+        if (now - c.lastSeen > 8000) { room.cursors.delete(id); updateOnlineCount(); continue; }
+        const sp = canvasToScreen(c.x, c.y);
+        // arrow cursor
+        overlayCtx.save();
+        overlayCtx.fillStyle = c.color || '#C49A2A';
+        overlayCtx.strokeStyle = '#fff';
+        overlayCtx.lineWidth = 1.5;
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(sp.x, sp.y);
+        overlayCtx.lineTo(sp.x + 12, sp.y + 4);
+        overlayCtx.lineTo(sp.x + 4, sp.y + 7);
+        overlayCtx.lineTo(sp.x + 7, sp.y + 17);
+        overlayCtx.lineTo(sp.x + 4, sp.y + 18);
+        overlayCtx.lineTo(sp.x, sp.y + 12);
+        overlayCtx.closePath();
+        overlayCtx.fill();
+        overlayCtx.stroke();
+        // name label
+        if (c.name) {
+            overlayCtx.font = '11px "DM Sans", sans-serif';
+            const text = c.name;
+            const padX = 6, padY = 3;
+            const textW = overlayCtx.measureText(text).width;
+            overlayCtx.fillStyle = c.color || '#C49A2A';
+            overlayCtx.beginPath();
+            const labelX = sp.x + 14, labelY = sp.y + 18;
+            const r = 4;
+            overlayCtx.moveTo(labelX + r, labelY);
+            overlayCtx.lineTo(labelX + textW + padX * 2 - r, labelY);
+            overlayCtx.quadraticCurveTo(labelX + textW + padX * 2, labelY, labelX + textW + padX * 2, labelY + r);
+            overlayCtx.lineTo(labelX + textW + padX * 2, labelY + 16 + padY - r);
+            overlayCtx.quadraticCurveTo(labelX + textW + padX * 2, labelY + 16 + padY, labelX + textW + padX * 2 - r, labelY + 16 + padY);
+            overlayCtx.lineTo(labelX + r, labelY + 16 + padY);
+            overlayCtx.quadraticCurveTo(labelX, labelY + 16 + padY, labelX, labelY + 16 + padY - r);
+            overlayCtx.lineTo(labelX, labelY + r);
+            overlayCtx.quadraticCurveTo(labelX, labelY, labelX + r, labelY);
+            overlayCtx.fill();
+            overlayCtx.fillStyle = '#fff';
+            overlayCtx.textBaseline = 'top';
+            overlayCtx.fillText(text, labelX + padX, labelY + padY);
+        }
+        overlayCtx.restore();
+    }
+
+    // Schedule next render if we have active cursors (so they fade out)
+    if (room.cursors.size > 0) needsRender = true;
 }
 
 function loop() {
@@ -818,7 +1486,7 @@ function setColor(c) {
         pushUndo();
         for (const id of state.selectedIds) {
             const o = state.objects.get(id);
-            if (o && o.type !== 'image') o.color = c;
+            if (o && o.type !== 'image') { o.color = c; broadcastObjectUpdate(o); }
         }
         needsRender = true; persistState();
     }
@@ -831,7 +1499,7 @@ function setSize(s) {
         pushUndo();
         for (const id of state.selectedIds) {
             const o = state.objects.get(id);
-            if (o && o.type !== 'text' && o.type !== 'sticky' && o.type !== 'image') o.size = brushSize(state.size);
+            if (o && o.type !== 'text' && o.type !== 'sticky' && o.type !== 'image') { o.size = brushSize(state.size); broadcastObjectUpdate(o); }
         }
         needsRender = true; persistState();
     }
@@ -950,6 +1618,7 @@ function onPointerMove(e) {
     const pos = getEventPos(e);
     state.cursor = { x: pos.x, y: pos.y };
     if (state.tool === 'eraser') needsRender = true;
+    broadcastCursor(pos.x, pos.y);
 
     if (state.panStart) {
         state.pan.x = state.panStart.panX + (pos.sx - state.panStart.startX);
@@ -975,6 +1644,7 @@ function onPointerMove(e) {
         // Scale the object's coordinates relative to the new bounds
         scaleObjectToBounds(o, orig, startB, { x: nx, y: ny, w: nw, h: nh });
         needsRender = true;
+        broadcastObjectUpdateThrottled(o);
         return;
     }
 
@@ -986,6 +1656,7 @@ function onPointerMove(e) {
             const orig = state.moveOffset.originals.get(id);
             if (!o || !orig) continue;
             translateObject(o, orig, dx, dy);
+            broadcastObjectUpdateThrottled(o);
         }
         needsRender = true;
         return;
@@ -1029,11 +1700,18 @@ function onPointerUp(e) {
         return;
     }
     if (state.transformHandle) {
+        const o = state.objects.get(state.transformHandle.object.id);
         state.transformHandle = null;
         persistState();
+        if (o) broadcastObjectUpdate(o);
         return;
     }
     if (state.moveOffset) {
+        // Broadcast final positions of all moved objects
+        for (const id of state.selectedIds) {
+            const o = state.objects.get(id);
+            if (o) broadcastObjectUpdate(o);
+        }
         state.moveOffset = null;
         persistState();
         return;
@@ -1058,6 +1736,7 @@ function onPointerUp(e) {
         const b = objectBounds(o);
         if (b.w < 2 && b.h < 2 && o.type !== 'pen') { state.currentDraft = null; state.isDrawing = false; needsRender = true; return; }
         addObject(o);
+        broadcastObjectAdd(o);
         if (o.type === 'sticky') openTextEditor(o);
         state.currentDraft = null;
     }
@@ -1092,6 +1771,7 @@ function eraseAt(pos) {
         for (const id of toDelete) {
             state.objects.delete(id);
             state.objectOrder = state.objectOrder.filter(x => x !== id);
+            broadcastObjectDelete(id);
         }
         needsRender = true;
         persistState();
@@ -1191,8 +1871,10 @@ function commitTextEditor() {
             // Empty text — delete it
             state.objects.delete(obj.id);
             state.objectOrder = state.objectOrder.filter(x => x !== obj.id);
+            broadcastObjectDelete(obj.id);
         } else {
             obj.text = newText;
+            broadcastObjectUpdate(obj);
         }
         needsRender = true;
         persistState();
@@ -1224,6 +1906,7 @@ function loadImageFromBlob(blob, dropX, dropY) {
             const canvasP = screenToCanvas(dropX || canvasArea.clientWidth / 2, dropY || canvasArea.clientHeight / 2);
             const o = { id: uid(), type: 'image', src: reader.result, x: canvasP.x - w / 2, y: canvasP.y - h / 2, w: w, h: h, _img: img };
             addObject(o);
+            broadcastObjectAdd(o);
             showToast('Image added');
         };
         img.src = reader.result;
@@ -1342,8 +2025,6 @@ function init() {
     overlayCtx = overlayCanvas.getContext('2d');
 
     initTheme();
-    loadState();
-    rehydrateImages();
     resizeCanvases();
     updateUndoButtons();
     updatePropsPanel();
@@ -1470,7 +2151,118 @@ function init() {
         window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
     }
 
+    // Landing handlers
+    document.getElementById('createBtn').addEventListener('click', () => createBoardInMode('e'));
+    document.getElementById('create1hBtn').addEventListener('click', () => createBoardInMode('h'));
+    document.getElementById('create24hBtn').addEventListener('click', () => createBoardInMode('d'));
+
+    document.getElementById('joinBtn').addEventListener('click', () => {
+        const raw = document.getElementById('joinInput').value || '';
+        let code = raw.trim().toLowerCase()
+            .replace(/^#/, '')
+            .replace(/^.*#/, '')
+            .replace(/[?&].*$/, '')
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/^-+|-+$/g, '')
+            .replace(/-+/g, '-');
+        if (!code || code.length < 3) { showToast('Enter a board password'); return; }
+        const parsed = parseRoomHash(code);
+        if (!parsed.valid) { showToast('Invalid board password'); return; }
+        if (parsed.expiresAt && Date.now() / 1000 > parsed.expiresAt) {
+            showExpiredOverlay(parsed.expiresAt);
+            return;
+        }
+        window.location.hash = parsed.full;
+        connectToRoom(parsed.full);
+        document.getElementById('joinInput').value = '';
+    });
+
+    document.getElementById('joinInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('joinBtn').click();
+    });
+
+    // Leave button
+    document.getElementById('leaveBtn').addEventListener('click', leaveRoom);
+
+    // Room pill (opens share modal)
+    document.getElementById('roomPill').addEventListener('click', openShareModal);
+
+    // Share modal
+    document.getElementById('shareCloseBtn').addEventListener('click', closeShareModal);
+    document.getElementById('shareCopyLinkBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(document.getElementById('shareLink').textContent)
+            .then(() => showToast('Link copied'));
+    });
+    document.getElementById('shareCopyPwdBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(document.getElementById('shareValue').textContent)
+            .then(() => showToast('Password copied'));
+    });
+    document.getElementById('shareModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeShareModal();
+    });
+
+    // Expired modal
+    document.getElementById('expiredNewBtn').addEventListener('click', () => {
+        document.getElementById('expiredModal').classList.remove('active');
+        showLanding();
+    });
+    document.getElementById('expiredModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) document.getElementById('expiredModal').classList.remove('active');
+    });
+
+    // Clear-all confirm modal
+    document.getElementById('clearAllConfirmBtn').addEventListener('click', performClearAllForEveryone);
+    document.getElementById('clearAllCancelBtn').addEventListener('click', () => document.getElementById('clearAllModal').classList.remove('active'));
+    document.getElementById('clearAllModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) document.getElementById('clearAllModal').classList.remove('active');
+    });
+
+    // Hash change (e.g., URL hash edited or back/forward)
+    window.addEventListener('hashchange', () => {
+        const h = window.location.hash.slice(1);
+        if (h && h !== room.fullHash) {
+            if (room.channel) leaveRoom();
+            connectToRoom(h);
+        } else if (!h && room.fullHash) {
+            leaveRoom();
+        }
+    });
+
+    // Visibility — reconnect on tab return if disconnected
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && room.fullHash && !room.connected) {
+            connectToRoom(room.fullHash);
+        }
+        if (!document.hidden && room.expiresAt && Date.now() / 1000 > room.expiresAt) {
+            triggerExpiry();
+        }
+    });
+    window.addEventListener('online', () => {
+        if (room.fullHash && !room.connected) connectToRoom(room.fullHash);
+    });
+
+    // Boot: parse URL hash, connect or show landing
     document.getElementById('zoomDisplay').textContent = Math.round(state.zoom * 100) + '%';
+    const initHash = window.location.hash.slice(1);
+    if (initHash) {
+        const parsed = parseRoomHash(initHash);
+        if (parsed.valid) {
+            if (parsed.expiresAt && Date.now() / 1000 > parsed.expiresAt) {
+                window.location.hash = '';
+                showExpiredOverlay(parsed.expiresAt);
+                showLanding();
+            } else {
+                connectToRoom(initHash);
+            }
+        } else {
+            window.location.hash = '';
+            showLanding();
+        }
+    } else {
+        showLanding();
+    }
+
     requestAnimationFrame(loop);
 }
 
